@@ -9,10 +9,18 @@
     "web": "expo start --web"
   },
   "dependencies": {
+    "@expo/vector-icons": "^14.1.0",
     "expo": "~53.0.12",
+    "expo-asset": "^11.1.5",
+    "expo-audio": "^0.4.6",
+    "expo-av": "^15.1.6",
+    "expo-linear-gradient": "^14.1.5",
     "expo-status-bar": "~2.2.3",
     "react": "19.0.0",
-    "react-native": "0.79.4"
+    "react-native": "0.79.4",
+    "react-native-gesture-handler": "^2.26.0",
+    "react-native-reanimated": "^3.18.0",
+    "react-native-safe-area-context": "^5.5.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

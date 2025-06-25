@@ -1,0 +1,345 @@
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Dimensions,
+  Clipboard,
+  Alert,
+} from 'react-native';
+import { Audio } from 'expo-av';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Message } from '../types';
+
+interface MessageBubbleProps {
+  message: Message;
+}
+
+const { width } = Dimensions.get('window');
+
+export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [sound, setSound] = useState<Audio.Sound | null>(null);
+
+  const playAudio = async () => {
+    try {
+      if (!message.audioUri) return;
+
+      if (sound) {
+        await sound.unloadAsync();
+        setSound(null);
+      }
+
+      const { sound: newSound } = await Audio.Sound.createAsync(
+        { uri: message.audioUri },
+        { shouldPlay: true }
+      );
+
+      setSound(newSound);
+      setIsPlaying(true);
+
+      newSound.setOnPlaybackStatusUpdate((status) => {
+        if (status.isLoaded && status.didJustFinish) {
+          setIsPlaying(false);
+        }
+      });
+    } catch (error) {
+      console.error('Error playing audio:', error);
+      setIsPlaying(false);
+    }
+  };
+
+  const stopAudio = async () => {
+    try {
+      if (sound) {
+        await sound.stopAsync();
+        setIsPlaying(false);
+      }
+    } catch (error) {
+      console.error('Error stopping audio:', error);
+    }
+  };
+
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString('es-ES', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  const formatDuration = (seconds?: number) => {
+    if (!seconds) return '0:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const copyToClipboard = async () => {
+    if (message.type === 'text') {
+      Clipboard.setString(message.content);
+      Alert.alert('Copiado', 'Mensaje copiado al portapapeles');
+    }
+  };
+
+  React.useEffect(() => {
+    return sound
+      ? () => {
+          sound.unloadAsync();
+        }
+      : undefined;
+  }, [sound]);
+
+  if (message.isUser) {
+    // User message - gray bubble on the right
+    return (
+      <View style={styles.userContainer}>
+        <View style={styles.userBubble}>
+          {message.type === 'text' ? (
+            <Text style={styles.userText}>{message.content}</Text>
+          ) : (
+            <View style={styles.userAudioBubble}>
+              <View style={styles.userAudioContainer}>
+                <TouchableOpacity
+                  onPress={isPlaying ? stopAudio : playAudio}
+                  style={styles.userAudioButton}
+                >
+                  <Ionicons
+                    name={isPlaying ? 'pause' : 'play'}
+                    size={16}
+                    color="#FFFFFF"
+                  />
+                </TouchableOpacity>
+                <View style={styles.userAudioContent}>
+                  <View style={styles.userWaveform}>
+                    {[...Array(25)].map((_, i) => (
+                      <View
+                        key={i}
+                        style={[
+                          styles.userWaveBar,
+                          { 
+                            height: isPlaying ? Math.random() * 20 + 6 : [8, 12, 6, 16, 10, 14, 8, 18, 12, 9, 15, 7, 13, 11, 16, 8, 14, 10, 12, 6, 17, 9, 13, 11, 15][i] || 10,
+                          }
+                        ]}
+                      />
+                    ))}
+                  </View>
+                  <Text style={styles.userAudioDuration}>
+                    {formatDuration(message.audioDuration)}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          )}
+        </View>
+      </View>
+    );
+  } else {
+    // Bot message - no bubble, with action icons
+    return (
+      <View style={styles.botContainer}>
+        <View style={styles.botContent}>
+          {message.type === 'text' ? (
+            <Text style={styles.botText}>{message.content}</Text>
+          ) : (
+            <View style={styles.botAudioContainer}>
+              <TouchableOpacity
+                onPress={isPlaying ? stopAudio : playAudio}
+                style={styles.botAudioButton}
+              >
+                <Ionicons
+                  name={isPlaying ? 'pause' : 'play'}
+                  size={18}
+                  color="#FFFFFF"
+                />
+              </TouchableOpacity>
+              <View style={styles.botAudioContent}>
+                <View style={styles.botWaveform}>
+                  {[...Array(20)].map((_, i) => (
+                    <View
+                      key={i}
+                      style={[
+                        styles.botWaveBar,
+                        { 
+                          height: isPlaying ? Math.random() * 16 + 8 : [12, 8, 16, 10, 14, 6, 18, 9, 13, 11, 15, 7, 17, 10, 12, 14, 8, 16, 9, 13][i] || 10,
+                        }
+                      ]}
+                    />
+                  ))}
+                </View>
+                <Text style={styles.botAudioDuration}>
+                  {formatDuration(message.audioDuration)}
+                </Text>
+              </View>
+            </View>
+          )}
+          
+          {/* Action buttons for bot messages */}
+          <View style={styles.actionButtons}>
+            <TouchableOpacity 
+              style={styles.actionButton}
+              onPress={copyToClipboard}
+            >
+              <Ionicons name="copy-outline" size={16} color="#666666" />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.actionButton}>
+              <Ionicons name="volume-high-outline" size={16} color="#666666" />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.actionButton}>
+              <Ionicons name="thumbs-up-outline" size={16} color="#666666" />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.actionButton}>
+              <Ionicons name="thumbs-down-outline" size={16} color="#666666" />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.actionButton}>
+              <Ionicons name="refresh-outline" size={16} color="#666666" />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    );
+  }
+};
+
+const styles = StyleSheet.create({
+  userContainer: {
+    marginVertical: 8,
+    marginHorizontal: 24,
+    alignItems: 'flex-end',
+  },
+  userBubble: {
+    backgroundColor: '#F1F1F3',
+    maxWidth: width * 0.75,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 18,
+    borderBottomRightRadius: 4,
+  },
+  userText: {
+    fontSize: 16,
+    color: '#000000',
+    lineHeight: 20,
+  },
+  userAudioBubble: {
+    minWidth: width * 0.6,
+    paddingHorizontal: 4,
+    paddingVertical: 4,
+  },
+  userAudioContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: 50,
+  },
+  botContainer: {
+    marginVertical: 8,
+    marginHorizontal: 24,
+    alignItems: 'flex-start',
+  },
+  botContent: {
+    maxWidth: width * 0.85,
+  },
+  botText: {
+    fontSize: 16,
+    color: '#1F2937',
+    lineHeight: 24,
+    marginBottom: 8,
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  actionButton: {
+    padding: 8,
+    marginRight: 4,
+    borderRadius: 8,
+  },
+  userAudioButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#6366F1', // Indigo moderno
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+    elevation: 2,
+    shadowColor: '#6366F1',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  userAudioContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  userWaveform: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    height: 24,
+    marginRight: 8,
+  },
+  userWaveBar: {
+    width: 3,
+    backgroundColor: '#8B5CF6', // Púrpura que combina con el indigo
+    borderRadius: 1.5,
+    marginHorizontal: 0.5,
+  },
+  userAudioDuration: {
+    fontSize: 11,
+    color: '#666666',
+    fontWeight: '500',
+    minWidth: 30,
+  },
+  botAudioContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  botAudioButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#10B981', // Verde esmeralda
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+    elevation: 1,
+    shadowColor: '#10B981',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+  },
+  botAudioContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  botWaveform: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 12,
+  },
+  botWaveBar: {
+    width: 2,
+    backgroundColor: '#34D399', // Verde claro que combina con el botón
+    borderRadius: 1,
+    marginHorizontal: 0.5,
+  },
+  botAudioDuration: {
+    fontSize: 13,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+}); 
