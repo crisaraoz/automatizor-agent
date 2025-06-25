@@ -12,6 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useAudioRecorder } from '../hooks/useAudioRecorder';
 import { MessageType } from '../types';
+import { VoiceChat } from './VoiceChat';
 
 interface ChatInputProps {
   onSendMessage: (content: string, type: MessageType, audioUri?: string, audioDuration?: number) => void;
@@ -23,6 +24,7 @@ const { width, height } = Dimensions.get('window');
 export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }) => {
   const [message, setMessage] = useState('');
   const [inputHeight, setInputHeight] = useState(50);
+  const [isVoiceChatVisible, setIsVoiceChatVisible] = useState(false);
   const pulseAnimation = useRef(new Animated.Value(1)).current;
   const slideAnimation = useRef(new Animated.Value(0)).current;
   
@@ -114,6 +116,14 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
   const handleContentSizeChange = (event: any) => {
     const newHeight = Math.min(Math.max(50, event.nativeEvent.contentSize.height + 20), 120);
     setInputHeight(newHeight);
+  };
+
+  const handleOpenVoiceChat = () => {
+    setIsVoiceChatVisible(true);
+  };
+
+  const handleCloseVoiceChat = () => {
+    setIsVoiceChatVisible(false);
   };
 
   if (isRecording) {
@@ -217,15 +227,22 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
                 <Ionicons name="mic" size={18} color="#FFFFFF" />
               </TouchableOpacity>
               <TouchableOpacity 
-                style={styles.soundButtonDisabled}
-                disabled={true}
+                style={styles.soundButton}
+                onPress={handleOpenVoiceChat}
+                disabled={isLoading}
               >
-                <Ionicons name="headset" size={18} color="#CCCCCC" />
+                <Ionicons name="headset" size={18} color="#FFFFFF" />
               </TouchableOpacity>
             </>
           )}
         </View>
       </View>
+
+      <VoiceChat
+        isVisible={isVoiceChatVisible}
+        onClose={handleCloseVoiceChat}
+        onSendMessage={onSendMessage}
+      />
     </View>
   );
 };
@@ -305,6 +322,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     opacity: 0.6,
+  },
+  soundButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#8B5CF6', // Púrpura para diferenciarlo
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   quickResponses: {
     flexDirection: 'row',
