@@ -153,10 +153,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
                 style={[
                   styles.recordingWaveBar,
                   { 
-                    height: pulseAnimation.interpolate({
-                      inputRange: [1, 1.2],
-                      outputRange: [8 + (i % 4) * 4, 24 + (i % 4) * 8],
-                    }),
                     opacity: pulseAnimation.interpolate({
                       inputRange: [1, 1.2],
                       outputRange: [0.6, 1],
@@ -164,7 +160,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
                     transform: [{ 
                       scaleY: pulseAnimation.interpolate({
                         inputRange: [1, 1.2],
-                        outputRange: [0.7, 1.3],
+                        outputRange: [0.5, 2.0 + (i % 4) * 0.3],
                       })
                     }]
                   }
@@ -448,8 +444,10 @@ const styles = StyleSheet.create({
   },
   recordingWaveBar: {
     width: 4,
+    height: 16, // Base height for scaleY animation
     backgroundColor: '#965fd4', // Eva01 purple
     marginHorizontal: 2,
+    borderRadius: 2,
     shadowColor: '#965fd4',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.4,
