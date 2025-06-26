@@ -11,6 +11,7 @@ import {
 import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Speech from 'expo-speech';
 import { Message } from '../types';
 
 interface MessageBubbleProps {
@@ -22,6 +23,7 @@ const { width } = Dimensions.get('window');
 export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [sound, setSound] = useState<Audio.Sound | null>(null);
+  const [isSpeaking, setIsSpeaking] = useState(false);
 
   const playAudio = async () => {
     try {
@@ -83,6 +85,46 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
     }
   };
 
+  const speakText = async () => {
+    try {
+      if (isSpeaking) {
+        // If already speaking, stop the speech
+        Speech.stop();
+        setIsSpeaking(false);
+        return;
+      }
+
+      if (message.type === 'text' && message.content) {
+        setIsSpeaking(true);
+        
+        await Speech.speak(message.content, {
+          language: 'es-ES', // Spanish language
+          pitch: 1.0,
+          rate: 0.9, // Slightly slower for better comprehension
+          volume: 1.0,
+          onStart: () => {
+            setIsSpeaking(true);
+          },
+          onDone: () => {
+            setIsSpeaking(false);
+          },
+          onStopped: () => {
+            setIsSpeaking(false);
+          },
+          onError: (error: any) => {
+            console.error('TTS Error:', error);
+            setIsSpeaking(false);
+            Alert.alert('Error', 'No se pudo reproducir el audio');
+          },
+        });
+      }
+    } catch (error) {
+      console.error('Error in speakText:', error);
+      setIsSpeaking(false);
+      Alert.alert('Error', 'No se pudo reproducir el audio');
+    }
+  };
+
   React.useEffect(() => {
     return sound
       ? () => {
@@ -90,6 +132,15 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
         }
       : undefined;
   }, [sound]);
+
+  // Cleanup TTS when component unmounts
+  React.useEffect(() => {
+    return () => {
+      if (isSpeaking) {
+        Speech.stop();
+      }
+    };
+  }, []);
 
   if (message.isUser) {
     // User message - gray bubble on the right
@@ -119,7 +170,9 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
                         style={[
                           styles.userWaveBar,
                           { 
-                            height: isPlaying ? Math.random() * 20 + 6 : [8, 12, 6, 16, 10, 14, 8, 18, 12, 9, 15, 7, 13, 11, 16, 8, 14, 10, 12, 6, 17, 9, 13, 11, 15][i] || 10,
+                            transform: [{ 
+                              scaleY: isPlaying ? Math.random() * 2 + 0.5 : [0.7, 1.0, 0.5, 1.3, 0.8, 1.2, 0.7, 1.5, 1.0, 0.8, 1.3, 0.6, 1.1, 0.9, 1.3, 0.7, 1.2, 0.8, 1.0, 0.5, 1.4, 0.8, 1.1, 0.9, 1.3][i] || 0.8
+                            }]
                           }
                         ]}
                       />
@@ -162,7 +215,9 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
                       style={[
                         styles.botWaveBar,
                         { 
-                          height: isPlaying ? Math.random() * 16 + 8 : [12, 8, 16, 10, 14, 6, 18, 9, 13, 11, 15, 7, 17, 10, 12, 14, 8, 16, 9, 13][i] || 10,
+                          transform: [{ 
+                            scaleY: isPlaying ? Math.random() * 1.5 + 0.7 : [1.0, 0.7, 1.3, 0.8, 1.2, 0.5, 1.5, 0.8, 1.1, 0.9, 1.3, 0.6, 1.4, 0.8, 1.0, 1.2, 0.7, 1.3, 0.8, 1.1][i] || 0.8
+                          }]
                         }
                       ]}
                     />
@@ -181,19 +236,26 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
               style={styles.actionButton}
               onPress={copyToClipboard}
             >
-              <Ionicons name="copy-outline" size={16} color="#666666" />
+              <Ionicons name="copy-outline" size={16} color="#734f9a" />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.actionButton, isSpeaking && styles.actionButtonActive]}
+              onPress={speakText}
+            >
+              <Ionicons 
+                name={isSpeaking ? "volume-high" : "volume-high-outline"} 
+                size={16} 
+                color={isSpeaking ? "#3f6d4e" : "#8bd450"} 
+              />
             </TouchableOpacity>
             <TouchableOpacity style={styles.actionButton}>
-              <Ionicons name="volume-high-outline" size={16} color="#666666" />
+              <Ionicons name="thumbs-up-outline" size={16} color="#3f6d4e" />
             </TouchableOpacity>
             <TouchableOpacity style={styles.actionButton}>
-              <Ionicons name="thumbs-up-outline" size={16} color="#666666" />
+              <Ionicons name="thumbs-down-outline" size={16} color="#965fd4" />
             </TouchableOpacity>
             <TouchableOpacity style={styles.actionButton}>
-              <Ionicons name="thumbs-down-outline" size={16} color="#666666" />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.actionButton}>
-              <Ionicons name="refresh-outline" size={16} color="#666666" />
+              <Ionicons name="refresh-outline" size={16} color="#1d1a2f" />
             </TouchableOpacity>
           </View>
         </View>
@@ -255,22 +317,27 @@ const styles = StyleSheet.create({
     marginRight: 4,
     borderRadius: 8,
   },
+  actionButtonActive: {
+    backgroundColor: 'rgba(139, 212, 80, 0.1)', // Eva01 green background when active
+    borderWidth: 1,
+    borderColor: 'rgba(139, 212, 80, 0.3)',
+  },
   userAudioButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#6366F1', // Indigo moderno
+    backgroundColor: '#965fd4', // Eva01 purple
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
-    elevation: 2,
-    shadowColor: '#6366F1',
+    elevation: 4,
+    shadowColor: '#965fd4',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 4,
     },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
   },
   userAudioContent: {
     flex: 1,
@@ -287,7 +354,8 @@ const styles = StyleSheet.create({
   },
   userWaveBar: {
     width: 3,
-    backgroundColor: '#8B5CF6', // Púrpura que combina con el indigo
+    height: 12, // Base height for scaleY animation
+    backgroundColor: '#734f9a', // Eva01 dark purple
     borderRadius: 1.5,
     marginHorizontal: 0.5,
   },
@@ -306,18 +374,18 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#10B981', // Verde esmeralda
+    backgroundColor: '#3f6d4e', // Eva01 dark green
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
-    elevation: 1,
-    shadowColor: '#10B981',
+    elevation: 3,
+    shadowColor: '#3f6d4e',
     shadowOffset: {
       width: 0,
-      height: 1,
+      height: 3,
     },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
   },
   botAudioContent: {
     flex: 1,
@@ -333,7 +401,8 @@ const styles = StyleSheet.create({
   },
   botWaveBar: {
     width: 2,
-    backgroundColor: '#34D399', // Verde claro que combina con el botón
+    height: 12, // Base height for scaleY animation
+    backgroundColor: '#8bd450', // Eva01 bright green
     borderRadius: 1,
     marginHorizontal: 0.5,
   },

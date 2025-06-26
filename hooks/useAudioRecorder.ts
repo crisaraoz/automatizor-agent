@@ -58,10 +58,15 @@ export const useAudioRecorder = () => {
           return;
         }
       }
+      // Complete recording mode setup
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: true,
         playsInSilentModeIOS: true,
+        shouldDuckAndroid: true,
+        playThroughEarpieceAndroid: false,
+        staysActiveInBackground: false,
       });
+      
       const { recording } = await Audio.Recording.createAsync(
         Audio.RecordingOptionsPresets.HIGH_QUALITY
       );
@@ -89,14 +94,30 @@ export const useAudioRecorder = () => {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
-
+      // Get URI first before cleanup
+      const uri = recordingRef.current.getURI();
+      
+      // Stop and unload the recording
       await recordingRef.current.stopAndUnloadAsync();
+      
+      // CRITICAL: Clear the reference immediately
+      recordingRef.current = null;
+      // CRITICAL: Multi-step audio restoration process
+      // Step 1: Wait for recording to fully stop
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Step 2: Reset to completely neutral state
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: false,
+        playsInSilentModeIOS: false,
+        shouldDuckAndroid: false,
+        playThroughEarpieceAndroid: false,
+        staysActiveInBackground: false,
       });
+      
+      // Step 3: Wait for complete reset  
+      await new Promise(resolve => setTimeout(resolve, 500));
 
-      const uri = recordingRef.current.getURI();
-      recordingRef.current = null;
       return {
         uri,
         duration: recordingDuration,
@@ -117,12 +138,31 @@ export const useAudioRecorder = () => {
         intervalRef.current = null;
       }
 
+      // Stop and unload the recording
       await recordingRef.current.stopAndUnloadAsync();
+      
+      // CRITICAL: Clear the reference immediately
+      recordingRef.current = null;
+
+      // CRITICAL: Multi-step audio restoration process
+      // Step 1: Wait for recording to fully stop
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Step 2: Reset to completely neutral state
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: false,
+        playsInSilentModeIOS: false,
+        shouldDuckAndroid: false,
+        playThroughEarpieceAndroid: false,
+        staysActiveInBackground: false,
       });
+      
+      // Step 3: Wait for complete reset
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // RADICAL: DON'T set TTS-ready state, leave it neutral
+      // Let expo-speech handle its own audio configuration
 
-      recordingRef.current = null;
       setRecordingDuration(0);
     } catch (error) {
       console.error('Error canceling recording:', error);
