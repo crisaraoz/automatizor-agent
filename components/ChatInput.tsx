@@ -140,24 +140,31 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
             onPress={handleCancelRecording}
             style={styles.recordingCancelButton}
           >
-            <Ionicons name="close" size={18} color="#EF4444" />
+            <Ionicons name="close" size={18} color="#965fd4" style={styles.iconWithGlow} />
           </TouchableOpacity>
         </View>
 
         {/* Recording controls */}
         <View style={styles.recordingControlsRow}>
           <View style={styles.recordingWaveform}>
-            {[...Array(20)].map((_, i) => (
+            {[...Array(15)].map((_, i) => (
               <Animated.View
                 key={i}
                 style={[
                   styles.recordingWaveBar,
                   { 
-                    height: Math.random() * 16 + 8,
+                    height: pulseAnimation.interpolate({
+                      inputRange: [1, 1.2],
+                      outputRange: [8 + (i % 4) * 4, 24 + (i % 4) * 8],
+                    }),
+                    opacity: pulseAnimation.interpolate({
+                      inputRange: [1, 1.2],
+                      outputRange: [0.6, 1],
+                    }),
                     transform: [{ 
                       scaleY: pulseAnimation.interpolate({
                         inputRange: [1, 1.2],
-                        outputRange: [0.5, 1],
+                        outputRange: [0.7, 1.3],
                       })
                     }]
                   }
@@ -176,7 +183,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
               onPress={handleStopRecording}
               style={styles.recordingStopButtonInner}
             >
-              <Ionicons name="stop" size={20} color="#FFFFFF" />
+              <Ionicons name="stop" size={20} color="#FFFFFF" style={styles.iconWithGlow} />
             </TouchableOpacity>
           </Animated.View>
         </View>
@@ -212,11 +219,29 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
               disabled={isLoading}
               style={[styles.sendButton, isLoading && styles.disabledButton]}
             >
-              <Ionicons 
-                name="arrow-up" 
-                size={18} 
-                color={isLoading ? '#CCCCCC' : '#FFFFFF'} 
-              />
+              {isLoading ? (
+                <View style={styles.buttonWaveContainer}>
+                  {[...Array(3)].map((_, i) => (
+                    <View
+                      key={i}
+                      style={[
+                        styles.buttonWave,
+                        { 
+                          height: 4 + i * 2,
+                          backgroundColor: '#734f9a',
+                          opacity: 0.6 + i * 0.1,
+                        }
+                      ]}
+                    />
+                  ))}
+                </View>
+              ) : (
+                <Ionicons 
+                  name="arrow-up" 
+                  size={18} 
+                  color="#FFFFFF" 
+                />
+              )}
             </TouchableOpacity>
           ) : (
             <>
@@ -298,27 +323,38 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#6366F1', // Indigo consistente
+    backgroundColor: '#965fd4', // Eva01 purple
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#965fd4',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
   disabledButton: {
-    backgroundColor: '#E5E5E7',
+    backgroundColor: '#1d1a2f', // Eva01 dark
+    shadowOpacity: 0.1,
   },
   micButton: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#10B981', // Verde esmeralda
+    backgroundColor: '#3f6d4e', // Eva01 dark green
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 8,
+    shadowColor: '#3f6d4e',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
   soundButtonDisabled: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#E5E5E7',
+    backgroundColor: '#1d1a2f', // Eva01 dark
     justifyContent: 'center',
     alignItems: 'center',
     opacity: 0.6,
@@ -327,9 +363,14 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#8B5CF6', // Púrpura para diferenciarlo
+    backgroundColor: '#8bd450', // Eva01 bright green
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#8bd450',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 10,
   },
   quickResponses: {
     flexDirection: 'row',
@@ -353,18 +394,23 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#EF4444', // Rojo más moderno
+    backgroundColor: '#8bd450', // Eva01 bright green
     marginRight: 8,
+    shadowColor: '#8bd450',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.6,
+    shadowRadius: 4,
+    elevation: 4,
   },
   recordingText: {
     fontSize: 14,
-    color: '#1F2937',
+    color: '#734f9a', // Eva01 dark purple
     fontWeight: '500',
     marginRight: 8,
   },
   recordingDuration: {
     fontSize: 14,
-    color: '#EF4444', // Rojo más moderno
+    color: '#8bd450', // Eva01 bright green
     fontWeight: '600',
   },
 
@@ -402,21 +448,50 @@ const styles = StyleSheet.create({
   },
   recordingWaveBar: {
     width: 4,
-    backgroundColor: '#EF4444', // Rojo más moderno
+    backgroundColor: '#965fd4', // Eva01 purple
     marginHorizontal: 2,
+    shadowColor: '#965fd4',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 3,
+    elevation: 3,
   },
   recordingStopButton: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#EF4444', // Rojo más moderno
+    backgroundColor: '#3f6d4e', // Eva01 dark green
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#3f6d4e',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 8,
   },
   recordingStopButtonInner: {
     width: '100%',
     height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  // Eva01 enhanced icon styles
+  iconWithGlow: {
+    textShadowColor: 'rgba(255, 255, 255, 0.8)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 8,
+  },
+  // Button wave styles
+  buttonWaveContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 18,
+    width: 18,
+  },
+  buttonWave: {
+    width: 2,
+    borderRadius: 1,
+    marginHorizontal: 0.5,
   },
 }); 

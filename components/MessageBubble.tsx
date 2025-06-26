@@ -181,19 +181,19 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
               style={styles.actionButton}
               onPress={copyToClipboard}
             >
-              <Ionicons name="copy-outline" size={16} color="#666666" />
+              <Ionicons name="copy-outline" size={16} color="#734f9a" />
             </TouchableOpacity>
             <TouchableOpacity style={styles.actionButton}>
-              <Ionicons name="volume-high-outline" size={16} color="#666666" />
+              <Ionicons name="volume-high-outline" size={16} color="#8bd450" />
             </TouchableOpacity>
             <TouchableOpacity style={styles.actionButton}>
-              <Ionicons name="thumbs-up-outline" size={16} color="#666666" />
+              <Ionicons name="thumbs-up-outline" size={16} color="#3f6d4e" />
             </TouchableOpacity>
             <TouchableOpacity style={styles.actionButton}>
-              <Ionicons name="thumbs-down-outline" size={16} color="#666666" />
+              <Ionicons name="thumbs-down-outline" size={16} color="#965fd4" />
             </TouchableOpacity>
             <TouchableOpacity style={styles.actionButton}>
-              <Ionicons name="refresh-outline" size={16} color="#666666" />
+              <Ionicons name="refresh-outline" size={16} color="#1d1a2f" />
             </TouchableOpacity>
           </View>
         </View>
@@ -259,18 +259,18 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#6366F1', // Indigo moderno
+    backgroundColor: '#965fd4', // Eva01 purple
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
-    elevation: 2,
-    shadowColor: '#6366F1',
+    elevation: 4,
+    shadowColor: '#965fd4',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 4,
     },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
   },
   userAudioContent: {
     flex: 1,
@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
   },
   userWaveBar: {
     width: 3,
-    backgroundColor: '#8B5CF6', // Púrpura que combina con el indigo
+    backgroundColor: '#734f9a', // Eva01 dark purple
     borderRadius: 1.5,
     marginHorizontal: 0.5,
   },
@@ -306,18 +306,18 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#10B981', // Verde esmeralda
+    backgroundColor: '#3f6d4e', // Eva01 dark green
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
-    elevation: 1,
-    shadowColor: '#10B981',
+    elevation: 3,
+    shadowColor: '#3f6d4e',
     shadowOffset: {
       width: 0,
-      height: 1,
+      height: 3,
     },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
   },
   botAudioContent: {
     flex: 1,
@@ -333,7 +333,7 @@ const styles = StyleSheet.create({
   },
   botWaveBar: {
     width: 2,
-    backgroundColor: '#34D399', // Verde claro que combina con el botón
+    backgroundColor: '#8bd450', // Eva01 bright green
     borderRadius: 1,
     marginHorizontal: 0.5,
   },
