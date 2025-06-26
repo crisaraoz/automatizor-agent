@@ -74,6 +74,9 @@ export const VoiceChat: React.FC<VoiceChatProps> = ({
           useNativeDriver: true,
         }),
       ]).start();
+
+      // Animations will be started by the state useEffect
+
     } else {
       // Reset animations when closing
       scaleAnimation.setValue(0);
@@ -88,7 +91,17 @@ export const VoiceChat: React.FC<VoiceChatProps> = ({
 
   // Advanced animations for different states
   useEffect(() => {
+    if (!isVisible) return; // Don't start animations if modal is not visible
+
     const startStateAnimations = () => {
+      // Stop any previous animations first
+      breatheAnimation.stopAnimation();
+      rippleAnimation.stopAnimation();
+      iconGlowAnimation.stopAnimation();
+      iconRotateAnimation.stopAnimation();
+      hexPatternAnimation.stopAnimation();
+      particleAnimations.forEach(anim => anim.stopAnimation());
+
       // Breathing animation for idle and speaking states
       const breatheLoop = Animated.loop(
         Animated.sequence([
@@ -216,7 +229,7 @@ export const VoiceChat: React.FC<VoiceChatProps> = ({
 
     const cleanup = startStateAnimations();
     return cleanup;
-  }, [state]);
+  }, [state, isVisible]);
 
   const handleClose = () => {
     // If IA is speaking, stop the speech first (like "Detener" button)
@@ -533,7 +546,53 @@ export const VoiceChat: React.FC<VoiceChatProps> = ({
                   {/* ChatGPT-style audio visualization */}
                   {state === 'idle' && (
                     <View style={styles.centerIconContainer}>
-                      <Ionicons name="mic" size={48} color="rgba(255, 255, 255, 0.9)" />
+                      {/* Subtle idle animation circles */}
+                      {[...Array(3)].map((_, index) => (
+                        <Animated.View
+                          key={index}
+                          style={[
+                            styles.idleCircle,
+                            {
+                              width: 80 + index * 30,
+                              height: 80 + index * 30,
+                              borderRadius: 40 + index * 15,
+                              borderColor: '#734f9a',
+                              opacity: breatheAnimation.interpolate({
+                                inputRange: [1, 1.08],
+                                outputRange: [0.3 - index * 0.08, 0.1 - index * 0.02],
+                              }),
+                              transform: [
+                                {
+                                  scale: breatheAnimation.interpolate({
+                                    inputRange: [1, 1.08],
+                                    outputRange: [1 - index * 0.05, 1.1 - index * 0.05],
+                                  })
+                                }
+                              ]
+                            }
+                          ]}
+                        />
+                      ))}
+                      {/* Central ready circle - no icon */}
+                      <Animated.View 
+                        style={[
+                          styles.centralReadyCircle,
+                          {
+                            transform: [
+                              {
+                                scale: iconGlowAnimation.interpolate({
+                                  inputRange: [0, 1],
+                                  outputRange: [1, 1.05],
+                                })
+                              }
+                            ],
+                            opacity: iconGlowAnimation.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: [0.8, 1],
+                            }),
+                          }
+                        ]}
+                      />
                     </View>
                   )}
                   
@@ -566,10 +625,27 @@ export const VoiceChat: React.FC<VoiceChatProps> = ({
                           ]}
                         />
                       ))}
-                      {/* Central microphone icon */}
-                      <View style={styles.centralIcon}>
-                        <Ionicons name="mic" size={32} color="#FFFFFF" />
-                      </View>
+                      {/* Central listening circle - no icon */}
+                      <Animated.View 
+                        style={[
+                          styles.centralActiveCircle,
+                          {
+                            backgroundColor: '#8bd450',
+                            transform: [
+                              {
+                                scale: iconGlowAnimation.interpolate({
+                                  inputRange: [0, 1],
+                                  outputRange: [1, 1.2],
+                                })
+                              }
+                            ],
+                            opacity: iconGlowAnimation.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: [0.8, 1],
+                            }),
+                          }
+                        ]}
+                      />
                     </View>
                   )}
                   
@@ -605,33 +681,33 @@ export const VoiceChat: React.FC<VoiceChatProps> = ({
                           ]}
                         />
                       ))}
-                      {/* Central processing dots */}
-                      <View style={styles.centralIcon}>
-                        <View style={styles.processingDots}>
-                          {[...Array(3)].map((_, i) => (
-                            <Animated.View
-                              key={i}
-                              style={[
-                                styles.processingDot,
-                                {
-                                  opacity: iconGlowAnimation.interpolate({
-                                    inputRange: [0, 1],
-                                    outputRange: [0.3, 1],
-                                  }),
-                                  transform: [
-                                    {
-                                      scale: iconGlowAnimation.interpolate({
-                                        inputRange: [0, 1],
-                                        outputRange: [0.5, 1.2],
-                                      })
-                                    }
-                                  ]
-                                }
-                              ]}
-                            />
-                          ))}
-                        </View>
-                      </View>
+                      {/* Central processing circle - no icon */}
+                      <Animated.View 
+                        style={[
+                          styles.centralActiveCircle,
+                          {
+                            backgroundColor: '#965fd4',
+                            transform: [
+                              {
+                                scale: iconGlowAnimation.interpolate({
+                                  inputRange: [0, 1],
+                                  outputRange: [0.8, 1.3],
+                                })
+                              },
+                              {
+                                rotate: iconRotateAnimation.interpolate({
+                                  inputRange: [0, 1],
+                                  outputRange: ['0deg', '360deg'],
+                                })
+                              }
+                            ],
+                            opacity: iconGlowAnimation.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: [0.7, 1],
+                            }),
+                          }
+                        ]}
+                      />
                     </View>
                   )}
                   
@@ -664,10 +740,27 @@ export const VoiceChat: React.FC<VoiceChatProps> = ({
                           ]}
                         />
                       ))}
-                      {/* Central speaker icon */}
-                      <View style={styles.centralIcon}>
-                        <Ionicons name="volume-high" size={32} color="#FFFFFF" />
-                      </View>
+                      {/* Central speaking circle - no icon */}
+                      <Animated.View 
+                        style={[
+                          styles.centralActiveCircle,
+                          {
+                            backgroundColor: '#3f6d4e',
+                            transform: [
+                              {
+                                scale: rippleAnimation.interpolate({
+                                  inputRange: [0, 1],
+                                  outputRange: [1, 1.4],
+                                })
+                              }
+                            ],
+                            opacity: rippleAnimation.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: [0.9, 0.7],
+                            }),
+                          }
+                        ]}
+                      />
                     </View>
                   )}
                 </LinearGradient>
@@ -1031,5 +1124,28 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     backgroundColor: '#965fd4',
     marginHorizontal: 2,
+  },
+  // New circle styles for cleaner look
+  idleCircle: {
+    position: 'absolute',
+    borderWidth: 1,
+    backgroundColor: 'transparent',
+  },
+  centralReadyCircle: {
+    position: 'absolute',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: 'rgba(115, 79, 154, 0.3)', // Eva01 purple with transparency
+    borderWidth: 2,
+    borderColor: '#734f9a',
+    zIndex: 10,
+  },
+  centralActiveCircle: {
+    position: 'absolute',
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    zIndex: 10,
   },
 });
