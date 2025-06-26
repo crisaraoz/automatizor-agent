@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Audio, AVPlaybackSource } from 'expo-av';
 import { Alert } from 'react-native';
+import * as Speech from 'expo-speech';
 import { useAudioRecorder } from './useAudioRecorder';
 import { processMessage } from '../utils/helpers';
 
@@ -34,7 +35,16 @@ export const useVoiceChat = () => {
       setState('listening');
       setTranscript('');
       setAiResponse('');
+      
+      // Start recording
       await audioRecorder.startRecording();
+      
+      // CRITICAL: Auto-repair IMMEDIATELY after recording starts
+      // Execute in parallel, don't wait for it
+      forceAudioReset().catch(error => {
+        console.error('❌ Immediate auto-repair failed:', error);
+      });
+      
     } catch (error) {
       console.error('Error starting voice chat listening:', error);
       Alert.alert('Error', 'No se pudo iniciar la grabación de voz');
@@ -53,12 +63,16 @@ export const useVoiceChat = () => {
         
         // Process the audio message
         try {
-          const response = await processMessage('Mensaje de audio recibido', 'audio');
+          // Use a mockup response for now that matches our assistant context
+          const response = "Hola, soy tu asistente automatizador. Con gusto te ayudaré a agendar las tareas que quieras!";
           setAiResponse(response);
           setTranscript('Audio procesado correctamente');
           
           // Start speaking state
           setState('speaking');
+          
+          // Wait for audio to be ready for TTS
+          await new Promise(resolve => setTimeout(resolve, 500));
           
           // Simulate text-to-speech
           await playAIResponse(response);
@@ -79,39 +93,125 @@ export const useVoiceChat = () => {
 
   const playAIResponse = async (responseText: string) => {
     try {
-      setIsPlaying(true);
-      
-      // For now, we'll simulate TTS with a timeout
-      // In a real implementation, you would use a TTS service
-      speechTimeoutRef.current = setTimeout(() => {
-        setIsPlaying(false);
-        setState('idle');
-      }, 3000); // Simulate 3 seconds of speech
+      // EXACT COPY: Do exactly what Interference Test does (that works!)
+      Speech.stop();
+      // EXACT SAME delay as Interference Test
+      await new Promise(resolve => setTimeout(resolve, 300));
+      // EXACT SAME TTS call as Interference Test
+      Speech.speak(responseText, {
+        language: 'es',
+        onStart: () => console.log('✅ INTERFERENCE-STYLE TTS started'),
+        onDone: () => {
+          setState('idle');
+        },
+        onError: (error) => {
+          console.error('❌ INTERFERENCE-STYLE TTS error:', error);
+          setState('idle');
+        },
+      });
       
     } catch (error) {
-      console.error('Error playing AI response:', error);
-      setIsPlaying(false);
+      console.error('❌ Error in INTERFERENCE-STYLE TTS:', error);
       setState('idle');
+    }
+  };
+
+  // ULTRA AGGRESSIVE audio system reset function
+  const forceAudioReset = async () => {
+    try {
+      // 1. Stop all audio activities
+      Speech.stop();
+      
+      // 2. MULTIPLE neutral resets (some systems need this)
+      for (let i = 0; i < 3; i++) {
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: false,
+          playsInSilentModeIOS: false,
+          shouldDuckAndroid: false,
+          playThroughEarpieceAndroid: false,
+          staysActiveInBackground: false,
+        });
+        
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+      
+      // 3. Wait for complete neutralization
+      await new Promise(resolve => setTimeout(resolve, 500));
+    } catch (error) {
+      console.error('❌ Error in forceAudioReset:', error);
+    }
+  };
+
+  // Helper function to get the best available voice
+  const getBestVoice = async (): Promise<string | undefined> => {
+    try {
+      const voices = await Speech.getAvailableVoicesAsync();
+      // Try to find Spanish voices in order of preference
+      const preferredVoices = [
+        'es-ES-standard-A', // Google Spanish female
+        'es-ES-standard-B', // Google Spanish male
+        'es-MX-standard-A', // Mexican Spanish female
+        'es-MX-standard-B', // Mexican Spanish male
+        'Maria', // iOS Spanish female
+        'Diego', // iOS Spanish male
+        'Paulina', // iOS Mexican Spanish female
+      ];
+
+      for (const preferredVoice of preferredVoices) {
+        const voice = voices.find(v => 
+          v.identifier === preferredVoice || 
+          v.name === preferredVoice ||
+          v.identifier.includes(preferredVoice)
+        );
+        if (voice) {
+          return voice.identifier;
+        }
+      }
+
+      // Fallback to any Spanish voice
+      const spanishVoice = voices.find(v => 
+        v.language.startsWith('es') ||
+        v.identifier.includes('es-')
+      );
+      
+      if (spanishVoice) {
+        return spanishVoice.identifier;
+      }
+
+      // Last resort: use default voice
+      return undefined;
+    } catch (error) {
+      console.error('Error getting voices:', error);
+      return undefined;
     }
   };
 
   const cancelVoiceChat = async () => {
     try {
+      // Stop recording if active
       if (audioRecorder.isRecording) {
         await audioRecorder.cancelRecording();
       }
       
+      // Stop any audio playback
       if (soundRef.current) {
         await soundRef.current.stopAsync();
         await soundRef.current.unloadAsync();
         soundRef.current = null;
       }
       
+      // Stop text-to-speech if active
+      if (isPlaying) {
+        Speech.stop();
+      }
+      
+      // Clear any timeouts
       if (speechTimeoutRef.current) {
         clearTimeout(speechTimeoutRef.current);
         speechTimeoutRef.current = null;
       }
       
+      // Reset state
       setIsPlaying(false);
       setState('idle');
       setTranscript('');
@@ -127,6 +227,12 @@ export const useVoiceChat = () => {
     setAiResponse('');
   };
 
+  const stopSpeech = () => {
+    Speech.stop();
+    // Don't check isPlaying state - just stop unconditionally
+    setState('idle');
+  };
+
   return {
     state,
     transcript,
@@ -138,5 +244,6 @@ export const useVoiceChat = () => {
     stopListening,
     cancelVoiceChat,
     continueTalking,
+    stopSpeech,
   };
 }; 

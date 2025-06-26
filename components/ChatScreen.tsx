@@ -76,7 +76,6 @@ export const ChatScreen: React.FC = () => {
   const handleSelectChat = (chatId: string) => {
     // TODO: Load selected chat messages
     setCurrentChatId(chatId);
-    console.log('Selected chat:', chatId);
   };
 
   const handleNewChat = () => {

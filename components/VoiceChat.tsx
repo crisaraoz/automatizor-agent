@@ -12,6 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
+import * as Speech from 'expo-speech';
 import { useVoiceChat } from '../hooks/useVoiceChat';
 
 interface VoiceChatProps {
@@ -39,6 +40,7 @@ export const VoiceChat: React.FC<VoiceChatProps> = ({
     stopListening,
     cancelVoiceChat,
     continueTalking,
+    stopSpeech,
   } = useVoiceChat();
   
   // Animations
@@ -130,15 +132,19 @@ export const VoiceChat: React.FC<VoiceChatProps> = ({
         )
       );
 
-      if (state === 'idle' || state === 'speaking') {
-        breatheLoop.start();
-      } else if (state === 'listening') {
-        rippleLoop.start();
-        particleLoops.forEach(loop => loop.start());
-      } else if (state === 'processing') {
-        breatheLoop.start();
-        rippleLoop.start();
-      }
+             if (state === 'idle') {
+         breatheLoop.start();
+       } else if (state === 'listening') {
+         rippleLoop.start();
+         particleLoops.forEach(loop => loop.start());
+       } else if (state === 'processing') {
+         breatheLoop.start();
+         rippleLoop.start();
+       } else if (state === 'speaking') {
+         // Always show intense animation while in speaking state
+         rippleLoop.start();
+         breatheLoop.start();
+       }
 
       return () => {
         breatheLoop.stop();
@@ -147,9 +153,9 @@ export const VoiceChat: React.FC<VoiceChatProps> = ({
       };
     };
 
-    const cleanup = startStateAnimations();
-    return cleanup;
-  }, [state]);
+         const cleanup = startStateAnimations();
+     return cleanup;
+   }, [state]);
 
   const handleClose = () => {
     cancelVoiceChat();
@@ -180,10 +186,10 @@ export const VoiceChat: React.FC<VoiceChatProps> = ({
         return {
           color: '#10B981',
           icon: 'volume-high' as const,
-          title: 'IA respondiendo',
-          subtitle: 'Escucha la respuesta',
-          buttonText: 'Continuar',
-          onPress: continueTalking,
+          title: 'IA hablando...',
+          subtitle: 'Reproduciendo respuesta...',
+          buttonText: 'Detener',
+          onPress: stopSpeech,
         };
       default:
         return {
@@ -258,47 +264,51 @@ export const VoiceChat: React.FC<VoiceChatProps> = ({
 
           {/* Central circle with ripple effects */}
           <View style={styles.centralSection}>
-            {/* Ripple effects */}
-            {state === 'listening' && (
-              <>
-                <Animated.View
-                  style={[
-                    styles.rippleCircle,
-                    styles.ripple1,
-                    {
-                      transform: [
-                        { scale: rippleAnimation.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: [1, 2.5],
-                        }) }
-                      ],
-                      opacity: rippleAnimation.interpolate({
-                        inputRange: [0, 0.5, 1],
-                        outputRange: [0.6, 0.2, 0],
-                      }),
-                    }
-                  ]}
-                />
-                <Animated.View
-                  style={[
-                    styles.rippleCircle,
-                    styles.ripple2,
-                    {
-                      transform: [
-                        { scale: rippleAnimation.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: [1, 2],
-                        }) }
-                      ],
-                      opacity: rippleAnimation.interpolate({
-                        inputRange: [0, 0.7, 1],
-                        outputRange: [0.4, 0.1, 0],
-                      }),
-                    }
-                  ]}
-                />
-              </>
-            )}
+                         {/* Ripple effects */}
+             {(state === 'listening' || state === 'speaking') && (
+               <>
+                 <Animated.View
+                   style={[
+                     styles.rippleCircle,
+                     styles.ripple1,
+                     {
+                       borderColor: state === 'listening' ? 
+                         'rgba(255, 65, 108, 0.3)' : 'rgba(16, 185, 129, 0.3)',
+                       transform: [
+                         { scale: rippleAnimation.interpolate({
+                           inputRange: [0, 1],
+                           outputRange: [1, 2.5],
+                         }) }
+                       ],
+                       opacity: rippleAnimation.interpolate({
+                         inputRange: [0, 0.5, 1],
+                         outputRange: [0.6, 0.2, 0],
+                       }),
+                     }
+                   ]}
+                 />
+                 <Animated.View
+                   style={[
+                     styles.rippleCircle,
+                     styles.ripple2,
+                     {
+                       borderColor: state === 'listening' ? 
+                         'rgba(255, 65, 108, 0.3)' : 'rgba(16, 185, 129, 0.3)',
+                       transform: [
+                         { scale: rippleAnimation.interpolate({
+                           inputRange: [0, 1],
+                           outputRange: [1, 2],
+                         }) }
+                       ],
+                       opacity: rippleAnimation.interpolate({
+                         inputRange: [0, 0.7, 1],
+                         outputRange: [0.4, 0.1, 0],
+                       }),
+                     }
+                   ]}
+                 />
+               </>
+             )}
 
             {/* Floating particles for listening state */}
             {state === 'listening' && particleAnimations.map((anim, index) => (
